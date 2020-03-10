@@ -1,0 +1,10 @@
+{
+  "name": "teste-nathi",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "bin": "readXslx.js",
+  "dependencies": {
+    "read-excel-file": "^4.0.5"
+  }
+}
