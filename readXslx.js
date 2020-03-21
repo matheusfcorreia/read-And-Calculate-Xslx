@@ -6,8 +6,9 @@ const schema = require('./xlsxSchema');
 
 let doctor = [];
 let healthInsurance = [];
+let docPercentage = [];
 
-const incrementValues = (index, name, liquid, rough, type) => {
+const incrementValues = (index, name, liquid, rough, type, percentage) => {
   switch (type) {
     case 'healthInsurance': {
       if(!healthInsurance[index]) healthInsurance[index] = { nome: name, liquido: liquid, bruto: rough };
@@ -23,6 +24,16 @@ const incrementValues = (index, name, liquid, rough, type) => {
         doctor[index].liquido += liquid;
         doctor[index].bruto += rough;
       }
+      break;
+    }
+
+    case 'Percentage': {
+      const getPercentage = (auxLiquid, auxPercentage) => (auxLiquid * auxPercentage);
+      
+      if(!docPercentage[index]) {
+        docPercentage[index] = { nome: name, valor: getPercentage(liquid, percentage) };
+      } else docPercentage[index].valor += getPercentage(liquid, percentage);
+      
       break;
     }
   }
@@ -95,6 +106,57 @@ const sumByDoc = (row) => {
     case 'CLESIO': 
       incrementValues(3, 'Clesio', row.LIQUIDO, row.BRUTO, 'Doctor');
       break;
+
+    default: break;
+  }
+}
+
+const sumByPercentage = (row) => {
+  let filteredRow = row['SOLICITANTE'].toLowerCase()
+  filteredRow = filteredRow.match(/[.](.*)/gm)[0];
+  filteredRow = filteredRow.replace(/\s/gm, '');
+  filteredRow = filteredRow.replace(/[.]/gm, '');
+
+  switch (filteredRow) {
+    case 'eudes': 
+      incrementValues(0, 'Eudes', row.LIQUIDO, row.BRUTO, 'Percentage', 0);
+      break;
+    
+    case 'karen': 
+      incrementValues(1, 'Karen', row.LIQUIDO, row.BRUTO, 'Percentage', 0);
+      break;
+    
+    case 'divina': 
+      incrementValues(2, 'Divina', row.LIQUIDO, row.BRUTO, 'Percentage', 0.3);
+      break;
+    
+    case 'clesio': 
+      incrementValues(3, 'Clesio', row.LIQUIDO, row.BRUTO, 'Percentage', 0.3);
+      break;
+    
+    case 'sant': 
+      incrementValues(4, 'Sant', row.LIQUIDO, row.BRUTO, 'Percentage');
+      break;
+    
+    case 'valmir': 
+      incrementValues(5, 'Valmir', row.LIQUIDO, row.BRUTO, 'Percentage', 0.3);
+      break;
+    
+    case 'douglas': 
+      incrementValues(6, 'Douglas', row.LIQUIDO, row.BRUTO, 'Percentage', 0.1);
+      break;
+    
+    case 'luciano': 
+      incrementValues(7, 'Luciano', row.LIQUIDO, row.BRUTO, 'Percentage', 0.1);
+      break;
+    
+    case 'claudio': 
+      incrementValues(8, 'Claudio', row.LIQUIDO, row.BRUTO, 'Percentage', 0.3);
+      break;
+      
+    case "sant'anna": 
+      incrementValues(9, "Sant'anna", row.LIQUIDO, row.BRUTO, 'Percentage', 0.3);
+      break;
     
     default: break;
   }
@@ -102,41 +164,37 @@ const sumByDoc = (row) => {
 
 const filterArray = (arr) => arr.filter(element => element);
 
+const writeFile = (file, type) => {
+  fs.writeFile(file, type, (err) => {
+    if (err) console.log(err);
+  });
+}
+
+const generateHtml = async (array) => {
+  const table = await jsonToTableHtmlString(filterArray(array))
+  return (
+    `<!DOCTYPE html>
+    <hmtl>
+      <body>
+        ${table}
+      </body>
+    </html>`
+  )
+}
+
 const data = async () => {
   await readXlsxFile('./planilha.xlsx', { schema })
   .then(({rows, err}) => {
     rows.map(row => {
       sumByDoc(row);
       sumByHealthInsurance(row);
-
+      sumByPercentage(row);
     });
   }).catch(err => console.log(err));
 
-  doctor = await jsonToTableHtmlString(filterArray(doctor));
-  htmlDoc = `
-    <!DOCTYPE html>
-    <hmtl>
-      <body>
-        ${doctor}
-      </body>
-    </html>`
-  
-  healthInsurance = await jsonToTableHtmlString(filterArray(healthInsurance));
-  htmlInsurance = `
-    <!DOCTYPE html>
-    <hmtl>
-      <body>
-        ${healthInsurance}
-      </body>
-    </html>`
-
-
-  fs.writeFile('doutores.html', htmlDoc, (err) => {
-    if (err) console.log(err);
-  });
-  fs.writeFile('convenios.html', htmlInsurance, (err) => {
-    if (err) console.log(err);
-  });
+  writeFile('doutores.html', await generateHtml(doctor));
+  writeFile('convenios.html', await generateHtml(healthInsurance));
+  writeFile('porcentagens.html', await generateHtml(docPercentage));
 }
 
 data();
