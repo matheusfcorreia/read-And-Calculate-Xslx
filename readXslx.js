@@ -1,5 +1,6 @@
 const fs = require('fs');
 const readXlsxFile = require('read-excel-file/node');
+const { jsonToTableHtmlString } = require('json-table-converter')
 
 const schema = require('./xlsxSchema');
 
@@ -91,52 +92,15 @@ const sumByDoc = (row) => {
       incrementValues(1, 'Karen', row.LIQUIDO, row.BRUTO, 'Doctor');
       break;
     
-    case 'DIVINA': 
-      incrementValues(2, 'Divina', row.LIQUIDO, row.BRUTO, 'Doctor');
-      break;
-    
     case 'CLESIO': 
       incrementValues(3, 'Clesio', row.LIQUIDO, row.BRUTO, 'Doctor');
-      break;
-    
-    case 'SANT': 
-      incrementValues(4, 'Sant', row.LIQUIDO, row.BRUTO, 'Doctor');
-      break;
-    
-    case 'VALMIR': 
-      incrementValues(5, 'Valmir', row.LIQUIDO, row.BRUTO, 'Doctor');
-      break;
-    
-    case 'DOUGLAS': 
-      incrementValues(6, 'Douglas', row.LIQUIDO, row.BRUTO, 'Doctor');
-      break;
-    
-    case 'LUCIANO': 
-      incrementValues(7, 'Luciano', row.LIQUIDO, row.BRUTO, 'Doctor');
-      break;
-    
-    case 'CLAUDIO': 
-      incrementValues(8, 'Claudio', row.LIQUIDO, row.BRUTO, 'Doctor');
       break;
     
     default: break;
   }
 }
 
-const filterArray = (arr) => {
-  return arr.filter(element => element);
-}
-
-const formatString = (string) => {
-  let formatedString = JSON.stringify(string);
-
-  formatedString = formatedString.replace(/[{]/gm, '');
-  formatedString = formatedString.replace(/[}]/gm, '');
-  formatedString = formatedString.replace(/[:]/gm, ': ');
-  formatedString = formatedString.replace(/["]/gm, ' ');
-
-  return '\n  ' + formatedString ;
-}
+const filterArray = (arr) => arr.filter(element => element);
 
 const data = async () => {
   await readXlsxFile('./planilha.xlsx', { schema })
@@ -148,13 +112,29 @@ const data = async () => {
     });
   }).catch(err => console.log(err));
 
-  doctor = filterArray(doctor);
-  healthInsurance = filterArray(healthInsurance);
+  doctor = await jsonToTableHtmlString(filterArray(doctor));
+  htmlDoc = `
+    <!DOCTYPE html>
+    <hmtl>
+      <body>
+        ${doctor}
+      </body>
+    </html>`
+  
+  healthInsurance = await jsonToTableHtmlString(filterArray(healthInsurance));
+  htmlInsurance = `
+    <!DOCTYPE html>
+    <hmtl>
+      <body>
+        ${healthInsurance}
+      </body>
+    </html>`
 
-  const result = `Médicos: ${doctor.map(val => formatString(val))}
-  \nConvênio: ${healthInsurance.map(val => formatString(val))}`;
 
-  fs.writeFile('valores.txt', result, (err) => {
+  fs.writeFile('doutores.html', htmlDoc, (err) => {
+    if (err) console.log(err);
+  });
+  fs.writeFile('convenios.html', htmlInsurance, (err) => {
     if (err) console.log(err);
   });
 }

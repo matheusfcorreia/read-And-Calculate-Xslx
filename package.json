@@ -5,6 +5,7 @@
   "license": "MIT",
   "bin": "readXslx.js",
   "dependencies": {
+    "json-table-converter": "^0.3.0",
     "read-excel-file": "^4.0.5"
   }
 }
